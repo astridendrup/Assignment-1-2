@@ -1,0 +1,282 @@
+---
+title: "Assignment 1 - Language Development in ASD - part 2"
+author: "Astrid"
+date: "26-09-2018"
+output: html_document
+---
+    
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# you could optionally set include = TRUE globally while working on the exercise and then just change it to include = FALSE before you hand in
+# knitr::opts_chunk$set(include = FALSE)
+```
+
+# Template for the hand-in
+### Structure of the code chunks
+
+Basic stuff:
+- Loading the libraries
+- Setting the directory and loading the data
+- Look at the data (which variables are there? Are they in the right format?) and describe the participants (by diagnosis)
+
+We will try to answer three questions:
+    
+- Do children with ASD develop language differently from non-ASD children?
+- Do parents speak differently to children with ASD than to non-ASD ones?
+- Which variables should we use to best explain the child linguistic performance?
+
+### Loading the relevant libraries
+
+Load necessary libraries : what will you need?
+
+- e.g. something to plot with
+- e.g. mixed effects models
+
+```{r Load Libraries, include = FALSE}
+
+library(plyr)
+```
+
+### Define your working directory and load the data
+If you created a project for this class and opened this Rmd file from within that project, your working directory is your project directory.
+
+If you opened this Rmd file outside of a project, you will need some code to find the data:
+- Create a new variable called locpath (localpath)
+- Set it to be equal to your working directory
+- Move to that directory (setwd(locpath))
+- Load the data you saved last time (use read_csv(fileName))
+
+If your're in a project, just put the data in the project folder and you're good to go! (Or make a data subfolder to keep it tidy around here)
+```{r Load Data, include = FALSE}
+
+getwd()
+
+#locpath=
+#setwd(locpath)
+Data = read_csv("First_Assignment_3_Semester.csv")
+Data <- Data[c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18)]
+Data <- rename(Data, c("nonVerbalIQ1"="nonVerbalIQ", "verbalIQ1"="verbalIQ", "ADOS1"="ADOS"))
+```
+
+### Characterize the participants (Exercise 1)
+
+Identify relevant variables: participants demographic characteristics, diagnosis, ADOS, Verbal IQ, Non Verbal IQ, Visit, Number of words used, Number of unique words used, length of utterance in both child and parents.
+
+Make sure the variables are in the right format.
+
+Describe the characteristics of the two groups of participants and whether the two groups are well matched.
+
+```{r descriptive stats, include = FALSE}
+# participants demographic characteristics, diagnosis
+ggplot(Data, aes(x = Gender)) + geom_bar() + facet_wrap(~Diagnosis)
+
+ggplot(Data, aes(x = Ethnicity,)) + geom_bar() + facet_wrap(~Diagnosis)
+
+ggplot(Data, aes(x = Diagnosis, y = Age)) + geom_boxplot() 
+
+
+t.test(TD_Data$Age,ASD_Data$Age)
+
+
+
+# Making two dataframes with TD and ASD
+TD_Data <- subset(Data, Diagnosis=="TD")
+ASD_Data <- subset(Data, Diagnosis=="ASD")
+
+
+
+# ADOS 
+ggplot(Data, aes(x = ADOS, fill = Diagnosis)) + geom_histogram()
+
+ggplot(Data, aes(x = Diagnosis, y = ADOS)) + geom_boxplot()
+
+t.test(TD_Data$ADOS , ASD_Data$ADOS)
+
+ggplot(Data, aes(x = ADOS, fill = Diagnosis)) + geom_histogram()
+
+
+
+# Verbal IQ and Non Verbal IQ
+ls.str(Data)
+#First we visualize the two variables I'm in charge of
+ggplot(Data, aes(x = Diagnosis, y = verbalIQ)) + geom_boxplot() 
+ggplot(Data, aes(x = Diagnosis, y = nonVerbalIQ)) + geom_boxplot() 
+#Verbal IQ seems asimilar - Let's compare  with a t-test
+t.test(TD_Data$verbalIQ,ASD_Data$verbalIQ)
+t.test(TD_Data$nonVerbalIQ,ASD_Data$nonVerbalIQ)
+# p = 1.685e-05 vs. p = 0.1525
+#As figured - verbalIQ seems to be a much stronger predictor for Autism than nonVerbalIQ
+ggplot(Data, aes(x = Diagnosis, y = verbalIQ)) + geom_boxplot() + facet_wrap(~Gender)
+ggplot(Data, aes(x = Diagnosis, y = nonVerbalIQ)) + geom_boxplot() + facet_wrap(~Gender)
+
+
+
+# VISITS
+t.test(TD_Data$Visits,ASD_Data$Visits)
+#The two groups do not differ, suggesting that the visits between the two groups are relatively matched
+
+ggplot(Data, aes(x = Diagnosis, y = Visits)) + geom_boxplot() 
+#As for boxplot we see the obvious similarity between the two
+
+# NUMBER OF WORDS USED BY MOTHERS
+
+#testing number of words used (tokens) for mothers
+t.test(TD_Data$tokens_MOT,ASD_Data$tokens_MOT)
+#there is no significant difference between the outspokenness of the mothers of the two types of children. Let's see it in a boxplot
+ggplot(Data, aes(x = Diagnosis, y = tokens_MOT)) + geom_boxplot() 
+#again, we see a big overlap between the two categories. The reach for the ASD-condition is slightly wider, with less speech
+
+# NUMBER OF WORDS USED BY CHILDREN
+#testing number of words used (tokens) for children
+t.test(TD_Data$tokens_CHI,ASD_Data$tokens_CHI)
+#there is a significant difference in the amount of words used by normal versus autist children, with the normal children having a word count of +50% compared to the autists
+ggplot(Data, aes(x = Diagnosis, y = tokens_CHI)) + geom_boxplot() 
+#The box-plot is showing the distribution of autist children generally producing fewer words than normal children - although with a few outliers in the autists doing well
+
+
+
+# NUMBER OF UNIQUE WORDS USED
+# types = unique words 
+# types_MOT
+# types_CHI 
+types_mother <- t.test(TD_Data$types_MOT,ASD_Data$types_MOT)
+types_mother
+types_child <- t.test(TD_Data$types_CHI,ASD_Data$types_CHI)
+types_child
+
+# LENGTH OF UTTERANCE IN BOTH CHILD AND PARENTS
+# mother = Mot_MLU 
+# child = CHI_MLU 
+MLU_mother <- t.test(TD_Data$MOT_MLU,ASD_Data$MOT_MLU)
+MLU_mother
+MLU_child <- t.test(TD_Data$CHI_MLU,ASD_Data$CHI_MLU)
+MLU_child
+
+# Boxplot
+ggplot(Data, aes(x = Diagnosis, y = types_MOT)) + geom_boxplot() 
+ggplot(Data, aes(x = Diagnosis, y = types_CHI)) + geom_boxplot()
+
+ggplot(Data, aes(x = Diagnosis, y = MOT_MLU)) + geom_boxplot()
+ggplot(Data, aes(x = Diagnosis, y = CHI_MLU)) + geom_boxplot()
+
+
+```
+
+[REPORT THE RESULTS]
+In these categories we found significant differences between the autist versus normal group: Total word count in the children, verbal IQ; unique words used for both mothers and children; mean length of utterance. Age-wise, the ASD-group is significantly older than the normal group (explained by the ASD-children lacking behind in their development from the beginning.)
+
+The autists differed clearly from the normal children on the autist scale.
+
+Categories that did not differ interestingly between the groups includes nonverbal IQ; amount of words spoken by mothers. Gender is equally distributed in the two groups; and also relatively similar ethnicity-wise.
+
+## Let's test hypothesis 1: Children with ASD display a language impairment  (Exercise 2)
+
+### Hypothesis: The child's MLU changes: i) over time, ii) according to diagnosis
+
+Let's start with a simple mixed effects linear model
+
+Remember to plot the data first and then to run a statistical test.
+- Which variable(s) should be included as fixed factors?
+- Which variable(s) should be included as random factors?
+
+```{r ex2, include = FALSE}
+install.packages("lmerTest")
+library(lmerTest) #mixed effects models with p-values
+model = lmer( CHI_MLU ~ Diagnosis + Visits + (1 + Visits|SUBJ), Data, REML=FALSE)
+summary(model)
+boxplot(CHI_MLU ~ Diagnosis + Visits, col=c("white","lightgray"),Data)
+
+```
+
+How would you evaluate whether the model is a good model?
+
+```{r ex2 evaluate, include = FALSE}
+#creating a null-model for evaluating our model
+model.null = lmer(CHI_MLU ~ Visits + (1 + Visits|SUBJ), Data, REML=FALSE)
+
+#comparing the two models using anova
+anova(model.null,model)
+
+#Diagnosis did not affect language development (in MLU) as much as we expected
+#χ2(1)=2.28, p=0.13 (insignificant)
+```
+
+Not too good, right? Let's check whether a growth curve model is better.
+Remember: a growth curve model assesses whether changes in time can be described by linear, or quadratic, or cubic (or... etc.) components.
+First build the different models, then compare them to see which one is better
+
+```{r ex2 growth curve, include = FALSE}
+
+ggplot(Data, aes(x=Visits, y=CHI_MLU, color=Diagnosis))+geom_point()+geom_smooth(method = "lm")
+quadratic <- lmer(CHI_MLU ~ Visits + I(Visits^2) + Diagnosis + (1+Visits|SUBJ),Data, REML=FALSE)
+summary(quadratic)
+anova(nul.model,quadratic)
+ggplot(Data, aes(x=Visits, y=CHI_MLU, color=Diagnosis))+geom_point()+geom_smooth(method = "lm", formula = y ~ poly(x, 2))
+
+cubic <- lmer(CHI_MLU ~ Visits + I(Visits^2) + I(Visits^3) + Diagnosis + (1+Visits + I(Visits^2) + I(Visits^3)|SUBJ), Data, REML=FALSE)
+summary(cubic)
+anova(nul.model,cubic)
+ggplot(Data, aes(x=Visits, y=CHI_MLU, color=Diagnosis))+geom_point()+geom_smooth(method = "lm", formula = y ~ poly(x, 3))
+
+anova(model, quadratic, cubic)
+#BIC should be lower (Bayseian Information Criteria) -> How probable is it that we get this data with this model -> Is it really worth it adding these parameters/predictors
+#We will use the awesome cubic model
+```
+
+Exciting right?
+Now it's time to report our results.
+Remember to report:
+- the estimates for each predictor (beta estimate, standard error, p-value)
+- A plain word description of the results
+- A plot of your best model's predictions
+
+[REPORT THE RESULTS]
+Linguistic development of children MLU is affected by ... 
+
+## Let's test hypothesis 2: Parents speak equally to children with ASD and TD  (Exercise 3)
+
+### Hypothesis: Parental MLU changes: i) over time, ii) according to diagnosis
+
+```{r ex3, include = FALSE}
+
+MOT_model = lmer( MOT_MLU ~ Diagnosis + Visits + (1 + Visits|SUBJ), Data, REML=FALSE)
+summary(MOT_model)
+boxplot(MOT_MLU ~ Diagnosis + Visits, col=c("white","lightgray"),Data)
+
+
+#creating a null-model for evaluating our model
+MOT_model.null = lmer(MOT_MLU ~ Visits + (1 + Visits|SUBJ), Data, REML=FALSE)
+
+#comparing the two models using anova
+anova(MOT_model.null,MOT_model)
+
+ggplot(Data, aes(x=Visits, y=MOT_MLU, color=Diagnosis))+geom_point()+geom_smooth(method = "lm")
+
+```
+
+[REPORT THE RESULTS]
+
+### Adding new variables (Exercise 4)
+
+Your task now is to figure out how to best describe the children linguistic trajectory. The dataset contains a bunch of additional demographic, cognitive and clinical variables (e.g.verbal and non-verbal IQ). Try them out and identify the statistical models that best describes your data (that is, the children's MLU). Describe how you selected the best model and send the code to run the model to Malte (au540041@post.au.dk).
+
+
+```{r ex4, include = FALSE}
+#Total word count in the children; verbal IQ; unique words used for both mothers and children; mean length of utterance.
+#And adding random effects.
+#And of course still including time (visits) and diagnosis.
+
+fresh_model = lmer(CHI_MLU ~ Diagnosis + Visits + types_CHI + verbalIQ + (1 + Visits|SUBJ), Data, REML=FALSE)
+summary(fresh_model)
+cor(Data$types_CHI, Data$tokens_CHI)
+#very high correlation between these two. Supposedly we can just include one. We pick types. The word types are not as dependent on the mood of the kid on the day of visit
+
+anova(fresh_model, model.null)
+#very nice p-values and AIC-BIC
+#note: is it OK that we compare our full model (with +4 predictors) to the null-model? Realistically, we cannot know, whether all the predictors have an influence (it could even be in the opposite direction)
+
+#no malte, we no p-hack we got minds np
+```
+
+[REPORT THE RESULTS]
+
