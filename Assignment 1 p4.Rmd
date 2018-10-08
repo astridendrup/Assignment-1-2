@@ -17,7 +17,9 @@ How much power does your study have (if your model estimates are quite right)?
 - Report the power analysis and comment on what you can (or cannot) use its estimates for.
 
 ```{r}
-library(tidyverse) ; library(stringr) ; library(stringi) ; library(pastecs) ; library(WRS2) ; library(sjPlot) ; library(nlme) ; library(plyr) 
+library(tidyverse) ; library(stringr) ; library(stringi) ; library(pastecs) ; library(WRS2) ; library(sjPlot) ; library(nlme) ; library(plyr) ; library(pacman)
+
+
 Traindata = read_csv("First_Assignment_3_Semester.csv")
 Traindata <- Traindata[c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18)]
 Traindata <- rename(Traindata, c("nonVerbalIQ1"="nonVerbalIQ", "verbalIQ1"="verbalIQ", "ADOS1"="ADOS"))
@@ -28,7 +30,7 @@ Testdata <- Testdata[c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18)] #getting rid
 # Combining testdata and training data together in a new dataframe
 Data <- rbind(Traindata, Testdata)
 
-quadratic <- lmer(CHI_MLU ~ (Visits + I(Visits^2)) * Diagnosis + (1+Visits|SUBJ),Data, REML=FALSE)
+quadratic <- lmer(CHI_MLU ~ (Visits + I(Visits^2)) + Diagnosis + (1+Visits|SUBJ),Data, REML=FALSE)
 summary(quadratic)
 
 
@@ -39,7 +41,7 @@ powerV
 powerD <- powerSim(quadratic,fixed("Diagnosis"),nsim=200)
 powerD
 
-powerint <- powerSim(quadratic,fixed("Visits*Dagnosis"),nsim=200)
+powerint <- powerSim(quadratic,fixed("Visits:Dagnosis"),nsim=200)
 powerint
 
 # The power of visit is 0% because the effect is very low. Small effect size --> less power. The same is the case for the interaction. However, Visits has power close to what we want..
@@ -56,26 +58,86 @@ How would you perform a more conservative power analysis?
 - [GitHub] if your power estimates do not reach an acceptable threshold simulate additional participants and repeat the previous analysis
 - Report the power analysis and comment on what you can (or cannot) use its estimates for.
 
+
+----ANSWER----
+Typical effect sizes in psychological experiments is d=.3 or d=.4. This means we will need a minimum of 1600 observations per condition: That is, for ASD-condition and for TD-condition.
+If we have 80 children in each condition, we will need around 20 observations per child.
+
+In this experiment, however, we realize there is a difference in effect size between the diagnosis-variable and the time-variable. The former has a relatively big effect size (d=1.5), and thus needs less observations in order to reach the 80% power. Time-variable is only [d=.1], and therefore demands [x] observations for a suitable power of 80%.
+
+Our effect size, however, is probably inflated, as our observations are relatively limited - thus, we perhaps shouldn't expect an effect size of d=1.5 for diagnosis, as we found in this case.
+
+
+- [GitHub] take the model from exercise 1 and replace the effects with the minimum effect size that you'd accept.
+
 ```{r}
-#d = 0.4 - 
+library(pacman)
+p_load("effsize-package")
+cohen.d(data, TD$CHI_MLU, ASD$CHI_MLU)
 
-fixef(quadratic)["Visits"] <- 6
-powerCurveV = powerCurve(quadratic, fixed("Visits"),along="SUBJ", nsim=200)
-powerCurveV
-
-fixef(quadratic)["DiagnosisTD"] <- 30
-powerCurveD = powerCurve(quadratic, fixed("DiagnosisTD"),along="SUBJ", nsim=200)
-powerCurveD
+#power curves
+powerCurveI = powerCurve(quadratic,fixed("Visits:Diagnosis"),along="SUBJ", nsim=20)
+plot(powerCurveI)
+powerCurveV = powerCurve(quadratic,fixed("Visits"),along="SUBJ", nsim=20)
+plot(powerCurveV)
+powerCurveD = powerCurve(quadratic,fixed("Diagnosis"),along="SUBJ", nsim=20)
+plot(powerCurveD)
 
 ```
 
+- [GitHub] assess the power curve by Child.ID, identifying an ideal number of participants to estimate each effect
+Power curve of interaction between Visits (time) and diagnosis 
+
+
+```{r}
+
+
+```
+In order to get a power of 80% of tracking the interaction between time and diagnosis, we need only 30 participants in this setup (6 visits/ subject).
+
+
+Power curve of time
+```{r}
+
+```
+
+Effect size of time is so negligible in this sample, that a power of 80 % is out of reach.
+
+
+Power curve of diagnosis 
+```{r}
+
+```
+
+Given the 60 participants we have in this experimental setup, we cannot expect reaching a power of 80% for tracking the effect of diagnosis on language production. 
 
 ### Exercise 3
 
 Assume you have only the resources to collect 30 kids (15 with ASD and 15 TDs). Identify the power for each relevant effect and discuss whether it's worth to run the study and why
 
 ```{r}
-fixef(quadratic)["Visits"] <- 6
+# [We don’t need to calculate effect size!]
+
+# We can read this off of our power curves. Given only 30 participants, we get a power of 40-50% for the interaction effect of visits and diagnosis, given the time-horizon of 6 visits per participant.
+
+# For the the effect of visits only, we are left with a power of [insert % here] given 30 participants.
+
+# For the the effect of diagnosis only, the power given 30 participants is [insert % here].
+
+fixef(quadratic)["Visits"] <- 1.5
+powerCurveV = powerCurve(quadratic, fixed("Visits"),along="SUBJ", nsim=20)
+powerCurveV
+plot(powerCurveV)
+
+fixef(quadratic)["Diagnosis"] <- 0.5
+powerCurveD = powerCurve(quadratic, fixed("Diagnosis"),along="SUBJ", nsim=20)
+powerCurveD
+plot(powerCurveD)
+
+fixef(quadratic)["Visits:Diagnosis"] <- 0.5
+powerCurveI = powerCurve(quadratic, fixed("Visits:Diagnosis"),along="SUBJ", nsim=20)
+powerCurveI
+plot(powerCurveI)
 
 
 ```
