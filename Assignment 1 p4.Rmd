@@ -16,6 +16,37 @@ How much power does your study have (if your model estimates are quite right)?
 - [GitHub]Load your dataset, fit your favorite model, assess power for your main effects and interactions of interest.
 - Report the power analysis and comment on what you can (or cannot) use its estimates for.
 
+```{r}
+library(tidyverse) ; library(stringr) ; library(stringi) ; library(pastecs) ; library(WRS2) ; library(sjPlot) ; library(nlme) ; library(plyr) 
+Traindata = read_csv("First_Assignment_3_Semester.csv")
+Traindata <- Traindata[c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18)]
+Traindata <- rename(Traindata, c("nonVerbalIQ1"="nonVerbalIQ", "verbalIQ1"="verbalIQ", "ADOS1"="ADOS"))
+
+Testdata <- read.csv("A1_Part3_Test_Data.CSV") #this is already cleaned up data
+Testdata <- Testdata[c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18)] #getting rid of the X-column
+
+# Combining testdata and training data together in a new dataframe
+Data <- rbind(Traindata, Testdata)
+
+quadratic <- lmer(CHI_MLU ~ (Visits + I(Visits^2)) * Diagnosis + (1+Visits|SUBJ),Data, REML=FALSE)
+summary(quadratic)
+
+
+library(simr)
+powerV <- powerSim(quadratic,fixed("Visits"),nsim=200)
+powerV
+
+powerD <- powerSim(quadratic,fixed("Diagnosis"),nsim=200)
+powerD
+
+powerint <- powerSim(quadratic,fixed("Visits*Dagnosis"),nsim=200)
+powerint
+
+# The power of visit is 0% because the effect is very low. Small effect size --> less power. The same is the case for the interaction. However, Visits has power close to what we want..
+
+```
+
+
 ### Exercise 2
 
 How would you perform a more conservative power analysis?
@@ -25,7 +56,29 @@ How would you perform a more conservative power analysis?
 - [GitHub] if your power estimates do not reach an acceptable threshold simulate additional participants and repeat the previous analysis
 - Report the power analysis and comment on what you can (or cannot) use its estimates for.
 
+```{r}
+#d = 0.4 - 
+
+fixef(quadratic)["Visits"] <- 6
+powerCurveV = powerCurve(quadratic, fixed("Visits"),along="SUBJ", nsim=200)
+powerCurveV
+
+fixef(quadratic)["DiagnosisTD"] <- 30
+powerCurveD = powerCurve(quadratic, fixed("DiagnosisTD"),along="SUBJ", nsim=200)
+powerCurveD
+
+```
+
 
 ### Exercise 3
 
 Assume you have only the resources to collect 30 kids (15 with ASD and 15 TDs). Identify the power for each relevant effect and discuss whether it's worth to run the study and why
+
+```{r}
+fixef(quadratic)["Visits"] <- 6
+
+
+```
+
+
+
